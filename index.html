@@ -1,0 +1,321 @@
+<!doctype html>
+<html>
+<head>
+<!-- charset -->
+<title>Membership Application and Renewal Form</title>
+<script type="text/javascript" src="openpgp.min.js"></script>
+<script type="text/javascript" src="jquery-2.1.0.min.js"></script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+<style type="text/css">
+body {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  background-color: #fff8dc;
+}
+
+.form-signup {
+  max-width: 700px;
+  padding: 15px;
+  margin: 0 auto;
+  background-color: #fff;
+}
+
+.end-of-form-text {
+  padding: 15px;
+  border-radius: 6px;
+}
+
+/* Icon */
+.form-title span {
+  float: right;
+}
+
+.input-money {
+	width: 10em;
+}
+
+.input-money input {
+	text-align: right;
+}
+
+.form-signup textarea {
+	resize: vertical;
+}
+</style>
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="jquery.serialize-object.min.js"></script>
+<script type="text/javascript">
+function hideShow(cond, ele, speed)
+{
+	if(cond)
+	{
+		ele.show(speed);
+		ele.find("input").attr("tabindex", "");
+	}
+	else
+	{
+		ele.hide(speed);
+		ele.find("input").attr("tabindex", "-1");//untabbable
+	}
+}
+
+function displayTotal() {
+	$("#total-amt").val($("#donation-amt").val()*1+$("#campaign-amt").val()*1);
+}
+$().ready(function () {
+	//do everything once
+	hideShow($("#is-organisation").is(":checked"),$("#contact-person-inputs"), 0);
+	hideShow($("input[name='user[member_type]'][value=individual]").is(":checked"),$("#consession-length"), 0);
+	displayTotal();
+	/////
+
+	$("#public-key").hide();
+	$("#costs").hide();
+
+	$("#is-organisation").change(function () {
+		hideShow($(this).is(":checked"),$("#contact-person-inputs"), "slow");
+		if($(this).is(":checked")) //is organisation
+		{
+			if($("input[name='user[member_type]'][value=individual]").is(":checked"))
+				$("input[name='user[member_type]'][value=small_organisation]").prop("checked", true);
+
+			$("input[name='user[member_type]'][value=individual]").prop("disabled", true);
+			$("input[name='user[member_type]'][value=small_organisation]").prop("disabled", false);
+			$("input[name='user[member_type]'][value=organisation]").prop("disabled", false);
+		}
+		else
+		{
+			$("input[name='user[member_type]'][value=individual]").prop("checked", true);
+
+			$("input[name='user[member_type]'][value=individual]").prop("disabled", false);
+			$("input[name='user[member_type]'][value=small_organisation]").prop("disabled", true);
+			$("input[name='user[member_type]'][value=organisation]").prop("disabled", true);
+		}
+	});
+
+	$("#membership-amt").change(displayTotal);
+	$("#donation-amt").change(displayTotal);
+	$("#campaign-amt").change(displayTotal);
+
+	$("input[name='user[member_type]']").change(function () {
+		individual = ($(this).val() == "individual") ? true : false;
+		hideShow(individual,$("#consession-length"), "slow");
+	});
+
+	$("#signupform").submit(function (event) {
+		event.preventDefault();
+		form_object = $(this).serializeObject();
+		public_key = openpgp.key.readArmored($("#public-key").text());
+		var message = "";
+		for(var key in form_object.user)
+		{
+			message += key + ": " + form_object.user[key] + "\r\n"; //It's self defeating to mess with this, you are just going to screw up your own application. It's processed by a human.
+		}
+		console.log(openpgp.encryptMessage(public_key.keys, message));
+	})
+});
+</script>
+</head>
+<body>
+<!--pre id="out">
+key = openpgp.key.readArmored($("#publickey").text());
+$("#out").text(openpgp.encryptMessage(key.keys, 'Super secret message!'));
+</pre-->
+    <div class="container">
+
+      <form id="signupform" class="form-signup" role="form" action="/signup/nojs/">
+      	<h2 class="form-title">Membership Application<span class="glyphicon glyphicon-lock"></span></h2>
+        <h3 class="form-section-heading">About You</h3>
+        <label for="user-name">Name:</label>
+        <input id="user-name" type="text" class="form-control" name="user[name]" placeholder="Your Name/Organisation Name" required autofocus>
+
+        
+		<label class="checkbox">
+			<input type="checkbox" id="is-organisation" autocomplete="off" name="user[is_org]" value="1">
+			<span>We are an organisation</span>
+		</label>
+
+            <div id="contact-person-inputs">
+	            <label for="user-contact-person">Contact Person:</label>
+	        	<input id="user-contact-person" type="text" class="form-control" name="user[contact_person]" placeholder="Contact Person">
+        	</div>
+
+        <label for="user-email">Email:</label>
+        <input id="user-email" type="email" class="form-control" name="user[email]" placeholder="Email address" required>
+
+        <label for="user-postal-address">Postal Address:</label>
+        <textarea id="user-postal-address" type="email" class="form-control" name="user[postal_address]" placeholder="Do we even need to ask for this?"></textarea>
+
+        <label for="user-phone">Phone:</label>
+        <input id="user-phone" type="tel" class="form-control" placeholder="Whatever, this isn't required.">
+
+        <!--label for="user-pgp-key">PGP Key:</label>
+        <input id="user-pgp-key" type="text" class="form-control" placeholder="If you want... include your public key."-->
+
+        <h3 class="form-section-heading">Member Involvement</h3>
+        <label>What interests and expertise do you have in the area of privacy?</label>
+        <textarea id="user-interests" class="form-control" name="user[interests]" placeholder="Optional, but we'd love to hear them!"></textarea>
+
+        <label>Do you want to volunteer to work on submissions with us?</label>
+        <label class="radio">
+	        <input type="radio" name="user[volunteer]" value="yes">
+	        <span>Yes!!! Count me in!</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[volunteer]" value="no">
+	        <span>Nope</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[volunteer]" value="ill-think-about-it">
+	        <span>I just want to signup now and think about it later</span>
+        </label>
+
+        <label>Comments</label>
+        <textarea id="user-comments" class="form-control" name="user[comments]" placeholder="We actually read this, so let loose!"></textarea>
+
+        <h3 class="form-section-heading">Payment</h3>
+        <label>Type of membership:</label>
+        <label class="radio">
+	        <input type="radio" name="user[member_type]" value="individual" checked>
+	        <span>Individual</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[member_type]" value="small_organisation">
+	        <span>Small Organisation (Nonprofit or &lt;5 people)</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[member_type]" value="organisation">
+	        <span>Organisation</span>
+        </label>
+
+        <label>Length:</label>
+        <label id="consession-length" class="radio">
+	        <input type="radio" name="user[member_pay_length]" value="consession">
+	        <span>Annual Student/Consession Membership</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[member_pay_length]" value="annual" checked>
+	        <span>Annual Membership</span>
+        </label>
+        <label class="radio">
+	        <input type="radio" name="user[member_pay_length]" value="life">
+	        <span>Life Membership</span>
+        </label>
+
+        <label>Cost:</label>
+		<div class="input-group input-money">
+		  <span class="input-group-addon">$</span>
+		  <input type="text" id="membership-amt" name="user[membership-amt]" class="form-control" readonly>
+		</div>
+
+        <label>Donation:</label>
+		<div class="input-group input-money">
+		  <span class="input-group-addon">$</span>
+		  <input type="text" id="donation-amt" name="user[donation]" class="form-control">
+		</div>
+
+        <label>Campaign Specifc Contribution</label>
+        <div class="input-group input-money">
+		  <span class="input-group-addon">$</span>
+		  <input type="text" id="campaign-amt" name="user[campaign_donation]" class="form-control">
+		</div>
+
+		<label>Which Campaign(s)</label>
+		  <input type="text" name="user[which_campaigns]" class="form-control">
+
+        <label>Total:</label>
+        <div class="input-group input-money">
+		  <span class="input-group-addon">$</span>
+		  <input type="text" id="total-amt" name="user[total]" class="form-control" readonly>
+		</div>
+
+        <div class="end-of-form-text alert-info">
+        <span>I declare that I/We support the Foundation's objects and purposes set out in Rule 3 of the Rules of Incorporation, as follows:</span>
+		<ul id="foundation-objectives">
+		<li>To protect the privacy rights of Australians, by means of research, awareness, education, the highlighting of privacy risks in all forms of technology and practices, and campaigns for new laws, regulations, codes, policies and practices, and amendments to existing laws, regulations, codes, policies and practices.</li>
+		<li>To focus public attention on emerging issues and technologies that pose a threat to the freedom and privacy of Australians.</li>
+		<li>To collaborate with consumer organisations, civil liberties councils, professional associations and other community groups on specific privacy issues.</li>
+		<li>To participate in and contribute to other national and to international privacy protection organisations and initiatives.</li>
+		<li>To provide information to industry associations and government agencies, and to cooperate with them wherever practicable, but to remain independent of them, and to be critical of them where necessary.</li>
+		<li>To pursue such additional objects and purposes as may facilitate the achievement of the preceding objects and purposes.</li>
+		</ul>
+		<span>Read our <a href="http://www.privacy.org.au/About/RulesofInc.html">rules of inforporation</a> for more. We value your privacy and protect your information in accordance with the National Privacy Principles and our <a href="http://www.privacy.org.au/PrivacyPolicy.html">privacy policy</a>.</span>
+		</div>
+
+        <button class="btn btn-lg btn-success btn-block" type="submit">Sign Up</button>
+      </form>
+      <section id="costs">
+		<h3>Individuals</h3>
+		Annual: <span data-cost="individual-annual">$40</span><br>
+		Annual Student/Consession: <span data-cost="individual-annual-consession">$10</span><br>
+		Life Membership: <span data-cost="individual-life">$275</span><br>
+
+		<h3>Small Organisation (Nonprofit or &lt;5 people)</h3>
+		Annual: <span data-cost="smallorg-annual">$220</span><br>
+		Life Membership: <span data-cost="smallorg-life">$660</span><br>
+
+		<h3>Organisation</h3>
+		Annual: <span data-cost="organisation-annual">$1100</span><br>
+		Life Membership: <span data-cost="organisation-life">$3300</span><br>
+      </section>
+      <pre id="public-key">
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+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
+=9kc7
+-----END PGP PUBLIC KEY BLOCK-----
+      </pre>
+    </div>
+</body>
+</html>
